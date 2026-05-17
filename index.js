@@ -2,12 +2,28 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import mongoose from "mongoose";
+import adminAnalyticsRoutes from "./routes/adminAnalyticsRoutes.js";
+import userRoutes from "./routes/userRoutes.js";
+import jobRoutes from "./routes/jobRoutes.js";
+import complaintRoutes from "./routes/complaintRoutes.js";
+import verificationRoutes from "./routes/verificationRoutes.js";
+import authRoutes from "./routes/authRoutes.js";
+import portfolioRoutes from "./routes/portfolioRoutes.js";
+
 
 dotenv.config();
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+app.use("/api/admin", adminAnalyticsRoutes);
+app.use("/api/users", userRoutes);
+app.use("/api/jobs", jobRoutes);
+app.use("/api/complaints", complaintRoutes);
+app.use("/api/verification", verificationRoutes);
+app.use("/api/auth", authRoutes);
+app.use("/api/portfolio", portfolioRoutes);
 
 mongoose.connect(process.env.Mongo_url, {
 })
