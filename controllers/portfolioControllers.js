@@ -1,4 +1,4 @@
-import User from '../models/User.js'
+import User from '../models/users.js'
 
 // GET MY PORTFOLIO
 export const getMyPortfolio = async (req, res) => {

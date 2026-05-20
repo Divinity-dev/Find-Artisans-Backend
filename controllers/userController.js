@@ -1,6 +1,6 @@
 // controllers/userController.js
 
-import User from '../models/User.js'
+import User from '../models/users.js'
 
 // ======================================
 // GET LOGGED IN USER
@@ -37,6 +37,7 @@ export const updateMyProfile = async (req, res) => {
 
     const {
       fullName,
+      email,
       phone,
       profilePhoto,
       about,
@@ -48,15 +49,54 @@ export const updateMyProfile = async (req, res) => {
       location,
     } = req.body
 
-    // Basic Fields
-    if (fullName) user.fullName = fullName
-    if (phone) user.phone = phone
-    if (profilePhoto) user.profilePhoto = profilePhoto
-    if (about) user.about = about
+    // ======================================
+    // BASIC FIELDS
+    // ======================================
 
-    // Worker Fields
-    if (skill) user.skill = skill
-    if (skills) user.skills = skills
+    if (fullName) {
+      user.fullName = fullName
+    }
+
+    if (email) {
+      // Check if email already exists
+      const existingUser = await User.findOne({
+        email,
+        _id: { $ne: user._id },
+      })
+
+      if (existingUser) {
+        return res.status(400).json({
+          success: false,
+          message: 'Email already in use',
+        })
+      }
+
+      user.email = email
+    }
+
+    if (phone) {
+      user.phone = phone
+    }
+
+    if (profilePhoto) {
+      user.profilePhoto = profilePhoto
+    }
+
+    if (about) {
+      user.about = about
+    }
+
+    // ======================================
+    // WORKER FIELDS
+    // ======================================
+
+    if (skill) {
+      user.skill = skill
+    }
+
+    if (skills) {
+      user.skills = skills
+    }
 
     if (yearsOfExperience !== undefined) {
       user.yearsOfExperience = yearsOfExperience
@@ -70,12 +110,17 @@ export const updateMyProfile = async (req, res) => {
       user.availability = availability
     }
 
-    // Location Object
+    // ======================================
+    // LOCATION
+    // ======================================
+
     if (location) {
       user.location = {
-        state: location.state || user.location?.state,
+        state:
+          location.state || user.location?.state,
 
-        city: location.city || user.location?.city,
+        city:
+          location.city || user.location?.city,
 
         localGovernment:
           location.localGovernment ||
@@ -95,12 +140,20 @@ export const updateMyProfile = async (req, res) => {
       }
     }
 
-    await user.save()
+    // ======================================
+    // SAVE USER
+    // ======================================
+
+    const updatedUser = await user.save()
+
+    // Remove password from response
+    const userResponse = updatedUser.toObject()
+    delete userResponse.password
 
     res.status(200).json({
       success: true,
       message: 'Profile updated successfully',
-      user,
+      user: userResponse,
     })
   } catch (error) {
     res.status(500).json({

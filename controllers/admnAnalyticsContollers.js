@@ -1,6 +1,6 @@
-import User from '../models/User.js'
-import Job from '../models/Job.js'
-import Complaint from '../models/Complaint.js'
+import User from '../models/users.js'
+import Job from '../models/jobs.js'
+import Complaint from '../models/complaints.js'
 
 // ======================================
 // DASHBOARD STATS

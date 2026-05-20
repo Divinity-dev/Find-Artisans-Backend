@@ -3,12 +3,12 @@ import cors from "cors";
 import dotenv from "dotenv";
 import mongoose from "mongoose";
 import adminAnalyticsRoutes from "./routes/adminAnalyticsRoutes.js";
-import userRoutes from "./routes/userRoutes.js";
+import userRoutes from "./routes/userRoute.js";
 import jobRoutes from "./routes/jobRoutes.js";
 import complaintRoutes from "./routes/complaintRoutes.js";
 import verificationRoutes from "./routes/verificationRoutes.js";
-import authRoutes from "./routes/authRoutes.js";
-import portfolioRoutes from "./routes/portfolioRoutes.js";
+import authRoutes from "./routes/authRoute.js";
+import portfolioRoutes from "./routes/portflioRoutes.js";
 
 
 dotenv.config();

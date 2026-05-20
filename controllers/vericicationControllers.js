@@ -1,4 +1,4 @@
-import User from '../models/User.js'
+import User from '../models/users.js'
 
 // SUBMIT VERIFICATION
 export const submitVerification = async (req, res) => {

@@ -4,7 +4,7 @@ import {
   getVerificationQueue,
   getComplaintOverview,
   getJobOverview,
-} from '../controllers/adminController.js'
+} from '../controllers/admnAnalyticsContollers.js'
 
 import { protect, adminOnly } from '../middleware/authMiddleware.js'
 

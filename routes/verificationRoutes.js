@@ -4,7 +4,7 @@ import {
   submitVerification,
   getMyVerification,
   adminVerifyUser,
-} from "../controllers/verificationController.js";
+} from "../controllers/vericicationControllers.js";
 
 import { protect, adminOnly } from "../middleware/authMiddleware.js";
 

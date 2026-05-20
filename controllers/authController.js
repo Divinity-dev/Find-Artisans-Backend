@@ -4,8 +4,7 @@ import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import crypto from 'crypto'
 import sendEmail from '../utils/sendEmail.js'
-import crypto from 'crypto'
-import User from '../models/User.js'
+import User from '../models/users.js'
 
 // ======================================
 // GENERATE JWT
@@ -206,75 +205,14 @@ user.resetPasswordOTP = hashedOTP
   }
 }
 
-// ======================================
-// VERIFY OTP
-// ======================================
-export const verifyPasswordOTP = async (
-  req,
-  res
-) => {
-  try {
-    const { email, otp } = req.body
 
-    const user = await User.findOne({ email })
-
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: 'User not found',
-      })
-    }
-
-    // Check OTP
-   const hashedInput = crypto
-  .createHash('sha256')
-  .update(otp)
-  .digest('hex')
-
-if (user.resetPasswordOTP !== hashedInput) {
-  return res.status(400).json({
-    success: false,
-    message: 'Invalid OTP',
-  })
-}
-
-    // Check Expiry
-    if (
-      user.resetPasswordOTPExpires < Date.now()
-    ) {
-      return res.status(400).json({
-        success: false,
-        message: 'OTP expired',
-      })
-    }
-
-    user.resetPasswordOTP = undefined
-    user.resetPasswordOTPExpires = undefined
-
-    await user.save()
-
-    res.status(200).json({
-      success: true,
-      message: 'OTP verified successfully',
-    })
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    })
-  }
-}
 
 // ======================================
-// RESET PASSWORD
+// VERIFY OTP AND RESET PASSWORD
 // ======================================
 export const resetPassword = async (req, res) => {
   try {
-    const {
-      email,
-      otp,
-      newPassword,
-    } = req.body
+    const { email, otp, newPassword } = req.body
 
     const user = await User.findOne({ email })
 
@@ -285,51 +223,35 @@ export const resetPassword = async (req, res) => {
       })
     }
 
-    // Validate OTP
     const hashedInput = crypto
-  .createHash('sha256')
-  .update(otp)
-  .digest('hex')
+      .createHash('sha256')
+      .update(otp)
+      .digest('hex')
 
-if (user.resetPasswordOTP !== hashedInput) {
-  return res.status(400).json({
-    success: false,
-    message: 'Invalid OTP',
-  })
-}
-
-    // Check Expiry
     if (
+      user.resetPasswordOTP !== hashedInput ||
       user.resetPasswordOTPExpires < Date.now()
     ) {
       return res.status(400).json({
         success: false,
-        message: 'OTP expired',
+        message: 'Invalid or expired OTP',
       })
     }
 
-    // Hash New Password
     const salt = await bcrypt.genSalt(10)
+    user.password = await bcrypt.hash(newPassword, salt)
 
-    const hashedPassword = await bcrypt.hash(
-      newPassword,
-      salt
-    )
-
-    user.password = hashedPassword
-
-    // Clear OTP
     user.resetPasswordOTP = undefined
     user.resetPasswordOTPExpires = undefined
 
     await user.save()
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
-      message: 'Password updated successfully',
+      message: 'Password reset successful',
     })
   } catch (error) {
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: error.message,
     })

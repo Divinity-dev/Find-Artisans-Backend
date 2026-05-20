@@ -6,7 +6,7 @@ import {
   applyToJob,
   assignWorker,
   updateJobStatus,
-} from '../controllers/jobController.js'
+} from '../controllers/jobControllers.js'
 
 import { protect, workerOnly } from '../middleware/authMiddleware.js'
 

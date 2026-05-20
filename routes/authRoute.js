@@ -6,7 +6,6 @@ import {
   registerUser,
   loginUser,
   forgotPassword,
-  verifyPasswordOTP,
   resetPassword,
 } from '../controllers/authController.js'
 
@@ -30,9 +29,6 @@ router.post('/login', loginUser)
 
 // Send OTP To Email
 router.post('/forgot-password', forgotPassword)
-
-// Verify OTP
-router.post('/verify-otp', verifyPasswordOTP)
 
 // Reset Password
 router.patch('/reset-password', resetPassword)

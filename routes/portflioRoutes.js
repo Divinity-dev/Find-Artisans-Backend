@@ -6,7 +6,7 @@ import {
   updatePortfolioItem,
   deletePortfolioItem,
   getMyPortfolio,
-} from '../controllers/portfolioController.js'
+} from '../controllers/portfolioControllers.js'
 
 import { protect, workerOnly } from '../middleware/authMiddleware.js'
 

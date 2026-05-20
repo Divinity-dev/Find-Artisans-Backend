@@ -3,7 +3,7 @@ import {
   createComplaint,
   getAllComplaints,
   updateComplaintStatus,
-} from '../controllers/complaintController.js'
+} from '../controllers/complaintControllers.js'
 
 import { protect, adminOnly } from '../middleware/authMiddleware.js'
 
