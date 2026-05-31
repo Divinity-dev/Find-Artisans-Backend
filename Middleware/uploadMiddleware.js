@@ -2,11 +2,14 @@ import multer from "multer";
 import { CloudinaryStorage } from "multer-storage-cloudinary";
 import cloudinary from "../config/cloudinary.js";
 
+// Allowed MIME types (BEST PRACTICE)
+const allowedMimeTypes = ["image/jpeg", "image/png", "image/webp"];
+
 const storage = new CloudinaryStorage({
   cloudinary,
   params: async (req, file) => ({
     folder: "artisan-platform/verifications",
-    allowed_formats: ["jpg", "jpeg", "png"],
+    allowed_formats: ["jpg", "jpeg", "png", "webp"],
     public_id: `${Date.now()}-${file.originalname}`,
   }),
 });
@@ -19,12 +22,10 @@ const upload = multer({
   },
 
   fileFilter: (req, file, cb) => {
-    const allowedTypes = ["image/jpeg", "image/png", "image/jpg"];
-
-    if (allowedTypes.includes(file.mimetype)) {
+    if (allowedMimeTypes.includes(file.mimetype)) {
       cb(null, true);
     } else {
-      cb(new Error("Only JPG and PNG files are allowed"));
+      cb(new Error("Only JPG, PNG, and WEBP files are allowed"));
     }
   },
 });

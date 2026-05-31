@@ -1,6 +1,6 @@
+import "./env.js";
 import express from "express";
 import cors from "cors";
-import dotenv from "dotenv";
 import mongoose from "mongoose";
 import adminAnalyticsRoutes from "./routes/adminAnalyticsRoutes.js";
 import userRoutes from "./routes/userRoute.js";
@@ -9,9 +9,10 @@ import complaintRoutes from "./routes/complaintRoutes.js";
 import verificationRoutes from "./routes/verificationRoutes.js";
 import authRoutes from "./routes/authRoute.js";
 import portfolioRoutes from "./routes/portflioRoutes.js";
+import reviewRoutes from "./routes/reviewroute.js";
 
 
-dotenv.config();
+
 
 const app = express();
 app.use(cors());
@@ -24,6 +25,9 @@ app.use("/api/complaints", complaintRoutes);
 app.use("/api/verification", verificationRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/portfolio", portfolioRoutes);
+app.use("/api/reviews", reviewRoutes);
+
+console.log("ENV PATH CHECK:", process.env.CLOUDINARY_API_KEY);
 
 mongoose.connect(process.env.Mongo_url, {
 })

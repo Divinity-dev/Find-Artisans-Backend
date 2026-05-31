@@ -42,6 +42,7 @@ export const updateMyProfile = async (req, res) => {
       profilePhoto,
       about,
       skill,
+      hourlyRate,
       skills,
       yearsOfExperience,
       specialization,
@@ -78,9 +79,16 @@ export const updateMyProfile = async (req, res) => {
       user.phone = phone
     }
 
-    if (profilePhoto) {
-      user.profilePhoto = profilePhoto
+    if (hourlyRate ) {
+      user.hourlyRate = hourlyRate
     }
+
+    if (
+  profilePhoto &&
+  !profilePhoto.startsWith('blob:')
+) {
+  user.profilePhoto = profilePhoto
+}
 
     if (about) {
       user.about = about
@@ -149,7 +157,6 @@ export const updateMyProfile = async (req, res) => {
     // Remove password from response
     const userResponse = updatedUser.toObject()
     delete userResponse.password
-
     res.status(200).json({
       success: true,
       message: 'Profile updated successfully',
