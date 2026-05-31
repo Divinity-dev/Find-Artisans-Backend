@@ -6,8 +6,9 @@ import {
   registerUser,
   loginUser,
   forgotPassword,
+  verifyOtp,
   resetPassword,
-} from '../controllers/authController.js'
+} from '../controllers/authController.js';
 
 import { protect } from '../middleware/authMiddleware.js'
 
@@ -30,7 +31,9 @@ router.post('/login', loginUser)
 // Send OTP To Email
 router.post('/forgot-password', forgotPassword)
 
+// verify otp
+router.post('/verify-otp', verifyOtp);
 // Reset Password
-router.patch('/reset-password', resetPassword)
+router.patch('/reset-password', resetPassword);
 
 export default router

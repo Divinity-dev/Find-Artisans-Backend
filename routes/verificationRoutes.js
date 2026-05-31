@@ -4,7 +4,7 @@ import {
   submitVerification,
   getMyVerification,
   adminVerifyUser,
-} from "../controllers/vericicationControllers.js";
+} from "../controllers/verificationControllers.js";
 
 import { protect, adminOnly } from "../middleware/authMiddleware.js";
 
@@ -19,19 +19,42 @@ router.post(
   upload.single("document"),
   async (req, res) => {
     try {
-      res.status(200).json({
+      console.log("FILE:", req.file)
+
+      if (!req.file) {
+        return res.status(400).json({
+          success: false,
+          message: "No file uploaded",
+        })
+      }
+
+      const imageUrl =
+        req.file.path ||
+        req.file.secure_url ||
+        req.file.location // fallback safety
+
+      if (!imageUrl) {
+        return res.status(500).json({
+          success: false,
+          message: "Upload succeeded but no image URL returned",
+        })
+      }
+
+      return res.status(200).json({
         success: true,
-        imageUrl: req.file.path,
+        imageUrl,
         public_id: req.file.filename,
-      });
+      })
     } catch (error) {
-      res.status(500).json({
+      console.log("UPLOAD ERROR:", error)
+
+      return res.status(500).json({
         success: false,
         message: error.message,
-      });
+      })
     }
   }
-);
+)
 
 // Submit verification
 router.post("/", protect, submitVerification);

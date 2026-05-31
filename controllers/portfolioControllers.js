@@ -1,59 +1,95 @@
 import User from '../models/users.js'
 
+// ===============================
 // GET MY PORTFOLIO
+// ===============================
 export const getMyPortfolio = async (req, res) => {
   try {
     const user = await User.findById(req.user._id)
 
-    res.status(200).json({
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found',
+      })
+    }
+
+    return res.status(200).json({
       success: true,
-      portfolio: user.portfolio,
+      data: user.portfolio || [],
     })
   } catch (error) {
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: error.message,
     })
   }
 }
 
+// ===============================
 // ADD PORTFOLIO ITEM
+// ===============================
 export const addPortfolioItem = async (req, res) => {
   try {
+    const { title, location, image, description } = req.body
+
+    if (!title || !description) {
+      return res.status(400).json({
+        success: false,
+        message: 'Title and description are required',
+      })
+    }
+
     const user = await User.findById(req.user._id)
 
-    const { title, location, image, description } = req.body
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found',
+      })
+    }
+
+    user.portfolio = user.portfolio || []
 
     user.portfolio.push({
       title,
-      location,
-      image,
+      location: location || '',
+      image: image || '',
       description,
     })
 
     await user.save()
 
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
       message: 'Portfolio item added',
-      portfolio: user.portfolio,
+      data: user.portfolio,
     })
   } catch (error) {
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: error.message,
     })
   }
 }
 
+// ===============================
 // UPDATE PORTFOLIO ITEM
+// ===============================
 export const updatePortfolioItem = async (req, res) => {
   try {
     const { portfolioId } = req.params
 
     const user = await User.findById(req.user._id)
 
-    const item = user.portfolio.id(portfolioId)
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found',
+      })
+    }
+
+    const item = user.portfolio?.id(portfolioId)
 
     if (!item) {
       return res.status(404).json({
@@ -64,34 +100,43 @@ export const updatePortfolioItem = async (req, res) => {
 
     const { title, location, image, description } = req.body
 
-    if (title) item.title = title
-    if (location) item.location = location
-    if (image) item.image = image
-    if (description) item.description = description
+    if (title !== undefined) item.title = title
+    if (location !== undefined) item.location = location
+    if (image !== undefined) item.image = image
+    if (description !== undefined) item.description = description
 
     await user.save()
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       message: 'Portfolio updated',
-      portfolio: user.portfolio,
+      data: user.portfolio,
     })
   } catch (error) {
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: error.message,
     })
   }
 }
 
+// ===============================
 // DELETE PORTFOLIO ITEM
+// ===============================
 export const deletePortfolioItem = async (req, res) => {
   try {
     const { portfolioId } = req.params
 
     const user = await User.findById(req.user._id)
 
-    const item = user.portfolio.id(portfolioId)
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found',
+      })
+    }
+
+    const item = user.portfolio?.id(portfolioId)
 
     if (!item) {
       return res.status(404).json({
@@ -101,15 +146,15 @@ export const deletePortfolioItem = async (req, res) => {
     }
 
     item.deleteOne()
-
     await user.save()
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       message: 'Portfolio deleted',
+      data: user.portfolio,
     })
   } catch (error) {
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: error.message,
     })

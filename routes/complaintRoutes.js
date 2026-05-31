@@ -1,18 +1,25 @@
 import express from 'express'
+
 import {
   createComplaint,
-  getAllComplaints,
+  getComplaints,
   updateComplaintStatus,
+  getMyComplaints,
 } from '../controllers/complaintControllers.js'
 
-import { protect, adminOnly } from '../middleware/authMiddleware.js'
+import {
+  protect,
+  adminOnly,
+} from '../middleware/authMiddleware.js'
 
 const router = express.Router()
 
+// Customer
 router.post('/', protect, createComplaint)
+router.get('/my', protect, getMyComplaints)
 
-router.get('/', protect, adminOnly, getAllComplaints)
-
+// Admin
+router.get('/', protect, adminOnly, getComplaints)
 router.patch('/:id', protect, adminOnly, updateComplaintStatus)
 
 export default router

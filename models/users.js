@@ -24,6 +24,20 @@ const userSchema = new mongoose.Schema(
       required: true,
     },
 
+    isOtpVerified: {
+  type: Boolean,
+  default: false,
+},
+// OTP RESET PASSWORD FIELDS
+resetPasswordOTP: {
+  type: String,
+  default: null,
+},
+
+resetPasswordOTPExpires: {
+  type: Date,
+  default: null,
+},
     phone: {
       type: String,
       required: true,
@@ -40,6 +54,10 @@ const userSchema = new mongoose.Schema(
       enum: ['customer', 'worker', 'admin'],
       default: 'customer',
     },
+    hourlyRate: {
+  type: Number,
+  default: 0,
+},
 
    location: {
   state: {

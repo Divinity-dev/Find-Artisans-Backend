@@ -1,25 +1,34 @@
 import express from 'express'
+
 import {
   getDashboardStats,
   getVerificationQueue,
-  getComplaintOverview,
-  getJobOverview,
-} from '../controllers/admnAnalyticsContollers.js'
+  verifyWorker,
+  getWorkers,
+  getCustomers,
+  getComplaints,
+  getJobs,
+} from '../controllers/adminAnalyticsControllers.js' // ✅ FIXED NAME
 
-import { protect, adminOnly } from '../middleware/authMiddleware.js'
+import {
+  protect,
+  adminOnly,
+} from '../middleware/authMiddleware.js'
 
 const router = express.Router()
 
-// Dashboard overview
 router.get('/stats', protect, adminOnly, getDashboardStats)
 
-// Pending verifications
 router.get('/verifications', protect, adminOnly, getVerificationQueue)
 
-// Complaints overview
-router.get('/complaints', protect, adminOnly, getComplaintOverview)
+router.put('/verifications/:id/verify', protect, adminOnly, verifyWorker)
 
-// Jobs overview
-router.get('/jobs', protect, adminOnly, getJobOverview)
+router.get('/workers', protect, adminOnly, getWorkers)
+
+router.get('/customers', protect, adminOnly, getCustomers)
+
+router.get('/jobs', protect, adminOnly, getJobs)
+
+router.get('/complaints', protect, adminOnly, getComplaints)
 
 export default router

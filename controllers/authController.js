@@ -115,7 +115,7 @@ export const loginUser = async (req, res) => {
     user.lastLogin = new Date()
 
     await user.save()
-
+console.log(user.profilePhoto)
     res.status(200).json({
       success: true,
       message: 'Login successful',
@@ -125,6 +125,7 @@ export const loginUser = async (req, res) => {
         fullName: user.fullName,
         email: user.email,
         role: user.role,
+        profilePhoto: user.profilePhoto,
       },
     })
   } catch (error) {
@@ -140,120 +141,149 @@ export const loginUser = async (req, res) => {
 // ======================================
 export const forgotPassword = async (req, res) => {
   try {
-    const { email } = req.body
+    const { email } = req.body;
 
-    const user = await User.findOne({ email })
+    const user = await User.findOne({ email });
 
     if (!user) {
       return res.status(404).json({
         success: false,
         message: 'No account found with this email',
-      })
+      });
     }
 
-    // Generate 6 Digit OTP
-    const otp = Math.floor(
-      100000 + Math.random() * 900000
-    ).toString()
+    // Generate OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
-    // Expiry Time (10 mins)
-    const otpExpiry = Date.now() + 10 * 60 * 1000
-
-    // Save OTP
+    // Hash OTP
     const hashedOTP = crypto
-  .createHash('sha256')
-  .update(otp)
-  .digest('hex')
+      .createHash('sha256')
+      .update(otp)
+      .digest('hex');
 
-user.resetPasswordOTP = hashedOTP
-    user.resetPasswordOTPExpires = otpExpiry
+    // Save hashed OTP + expiry
+    user.resetPasswordOTP = hashedOTP;
+    user.resetPasswordOTPExpires = Date.now() + 10 * 60 * 1000;
 
-    await user.save()
-
-    // ======================================
-    // SEND EMAIL HERE
-    // ======================================
+    await user.save();
 
     await sendEmail(
-  user.email,
-  'FindArtisans Password Reset OTP',
-  `
-    <div style="font-family: Arial;">
-      <h2>Password Reset Request</h2>
+      user.email,
+      'FindArtisans Password Reset OTP',
+      `
+        <div style="font-family: Arial;">
+          <h2>Password Reset Request</h2>
+          <p>Your OTP code is:</p>
+          <h1>${otp}</h1>
+          <p>This OTP expires in 10 minutes.</p>
+        </div>
+      `
+    );
 
-      <p>Your OTP code is:</p>
-
-      <h1>${otp}</h1>
-
-      <p>This OTP expires in 10 minutes.</p>
-    </div>
-  `
-)
-    console.log(`
-      OTP FOR ${user.email}: ${otp}
-    `)
-
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       message: 'OTP sent to email',
-    })
+    });
+
   } catch (error) {
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: error.message,
-    })
+    });
   }
-}
-
-
+};
 
 // ======================================
-// VERIFY OTP AND RESET PASSWORD
+// VERIFY OTP 
 // ======================================
-export const resetPassword = async (req, res) => {
+
+export const verifyOtp = async (req, res) => {
   try {
-    const { email, otp, newPassword } = req.body
+    const { email, otp } = req.body;
 
-    const user = await User.findOne({ email })
+    const user = await User.findOne({ email });
 
     if (!user) {
       return res.status(404).json({
         success: false,
         message: 'User not found',
-      })
+      });
     }
 
     const hashedInput = crypto
       .createHash('sha256')
       .update(otp)
-      .digest('hex')
+      .digest('hex');
 
-    if (
-      user.resetPasswordOTP !== hashedInput ||
-      user.resetPasswordOTPExpires < Date.now()
-    ) {
+    const isExpired = user.resetPasswordOTPExpires < Date.now();
+  
+
+    if (user.resetPasswordOTP !== hashedInput || isExpired) {
       return res.status(400).json({
         success: false,
         message: 'Invalid or expired OTP',
-      })
+      });
     }
 
-    const salt = await bcrypt.genSalt(10)
-    user.password = await bcrypt.hash(newPassword, salt)
+    user.isOtpVerified = true;
 
-    user.resetPasswordOTP = undefined
-    user.resetPasswordOTPExpires = undefined
-
-    await user.save()
+    await user.save();
 
     return res.status(200).json({
       success: true,
-      message: 'Password reset successful',
-    })
+      message: 'OTP verified successfully',
+    });
+
   } catch (error) {
     return res.status(500).json({
       success: false,
       message: error.message,
-    })
+    });
   }
-}
+};
+
+// ======================================
+//  RESET PASSWORD
+// ======================================
+export const resetPassword = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found',
+      });
+    }
+
+    if (!user.isOtpVerified) {
+      return res.status(403).json({
+        success: false,
+        message: 'OTP not verified',
+      });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    user.password = await bcrypt.hash(password, salt);
+
+    // cleanup
+    user.resetPasswordOTP = undefined;
+    user.resetPasswordOTPExpires = undefined;
+    user.isOtpVerified = false;
+
+    await user.save();
+
+    return res.status(200).json({
+      success: true,
+      message: 'Password reset successful',
+    });
+
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
