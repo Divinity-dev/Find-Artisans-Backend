@@ -160,3 +160,26 @@ export const deletePortfolioItem = async (req, res) => {
     })
   }
 }
+
+export const getWorkerPortfolio = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.workerId)
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'Worker not found',
+      })
+    }
+
+    res.status(200).json({
+      success: true,
+      data: user.portfolio || [],
+    })
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    })
+  }
+}

@@ -1,6 +1,9 @@
 // controllers/userController.js
 
 import User from '../models/users.js'
+import Job from '../models/jobs.js'
+import Review from '../models/review.js' 
+import { calculateTrustScore } from '../services/trustscore.js'
 
 // ======================================
 // GET LOGGED IN USER
@@ -9,9 +12,32 @@ export const getMyProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user._id).select('-password')
 
+    const jobs = await Job.find({ customer: user._id })
+
+    const totalJobs = jobs.length
+    const completedJobs = jobs.filter(j => j.status === 'completed').length
+    const cancelledJobs = jobs.filter(j => j.status === 'cancelled').length
+
+    const trustScore = calculateTrustScore({
+      totalJobs,
+      completedJobs,
+      cancelledJobs,
+      isVerified: user.verification?.isVerified,
+    })
+
+    const stats = {
+      totalJobs,
+      completedJobs,
+      cancelledJobs,
+      trustScore,
+    }
+
     res.status(200).json({
       success: true,
-      user,
+      data: {
+        ...user.toObject(),
+        stats,
+      },
     })
   } catch (error) {
     res.status(500).json({
@@ -175,9 +201,7 @@ export const updateMyProfile = async (req, res) => {
 // ======================================
 export const getSingleUser = async (req, res) => {
   try {
-    const user = await User.findById(req.params.id).select(
-      '-password'
-    )
+    const user = await User.findById(req.params.id).select('-password')
 
     if (!user) {
       return res.status(404).json({
@@ -186,10 +210,40 @@ export const getSingleUser = async (req, res) => {
       })
     }
 
-    res.status(200).json({
-      success: true,
-      user,
-    })
+    // OPTIONAL: if you have Job model
+    const jobs = await Job.find({ customer: user._id }).populate('assignedWorker', 'fullName')
+
+    // OPTIONAL: if you have Review model
+    const reviews = await Review.find({ reviewer: user._id })
+  .populate('reviewedUser', 'fullName')
+
+    const totalJobs = jobs.length
+const completedJobs = jobs.filter(j => j.status === 'completed').length
+const cancelledJobs = jobs.filter(j => j.status === 'cancelled').length
+
+const trustScore = calculateTrustScore({
+  totalJobs,
+  completedJobs,
+  cancelledJobs,
+  isVerified: user.verification?.isVerified,
+})
+
+const stats = {
+  totalJobs,
+  completedJobs,
+  cancelledJobs,
+  trustScore,
+}
+
+    return res.status(200).json({
+  success: true,
+  data: {
+    user,
+    jobs,
+    reviews,
+    stats,
+  },
+})
   } catch (error) {
     res.status(500).json({
       success: false,

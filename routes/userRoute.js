@@ -35,11 +35,11 @@ router.delete('/me', protect, deleteMyAccount)
 // PUBLIC ROUTES
 // ======================================
 
+// Get All Workers 
+router.get('/workers/all', getAllWorkers)
+
 // Get Single User
 router.get('/:id', getSingleUser)
-
-// Get All Workers
-router.get('/workers/all', getAllWorkers)
 
 // ======================================
 // WORKER ROUTES

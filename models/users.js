@@ -49,6 +49,16 @@ resetPasswordOTPExpires: {
       default: '',
     },
 
+    customerRating: {
+  type: Number,
+  default: 0,
+},
+
+customerReviews: {
+  type: Number,
+  default: 0,
+},
+
     role: {
       type: String,
       enum: ['customer', 'worker', 'admin'],
@@ -125,11 +135,6 @@ resetPasswordOTPExpires: {
     },
 
     totalReviews: {
-      type: Number,
-      default: 0,
-    },
-
-    trustScore: {
       type: Number,
       default: 0,
     },

@@ -6,6 +6,7 @@ import {
   updatePortfolioItem,
   deletePortfolioItem,
   getMyPortfolio,
+  getWorkerPortfolio,
 } from '../controllers/portfolioControllers.js'
 
 import { protect, workerOnly } from '../middleware/authMiddleware.js'
@@ -17,6 +18,9 @@ router.get('/me', protect, workerOnly, getMyPortfolio)
 
 // Add portfolio item
 router.post('/', protect, workerOnly, addPortfolioItem)
+
+// Get worker portfolio by worker ID
+router.get('/:workerId', getWorkerPortfolio)
 
 // Update portfolio item
 router.patch('/:portfolioId', protect, workerOnly, updatePortfolioItem)

@@ -107,3 +107,29 @@ export const workerOnly = (req, res, next) => {
     })
   }
 }
+
+// Customer Middleware
+export const customerOnly = (req, res, next) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        message: 'Not authorized',
+      })
+    }
+
+    if (req.user.role !== 'customer') {
+      return res.status(403).json({
+        success: false,
+        message: 'Customer access only',
+      })
+    }
+
+    next()
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    })
+  }
+}
