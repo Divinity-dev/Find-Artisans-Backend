@@ -450,7 +450,7 @@ export const getWorkerActiveJobs = async (req, res) => {
 // ===============================
 export const getWorkerCompletedJobs = async (req, res) => {
   try {
-    const { id } = req.params;
+    const { id } = req.user;
 
     const jobs = await Job.find({
       assignedWorker: id,
