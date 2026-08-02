@@ -115,7 +115,6 @@ export const loginUser = async (req, res) => {
     user.lastLogin = new Date()
 
     await user.save()
-console.log(user.profilePhoto)
     res.status(200).json({
       success: true,
       message: 'Login successful',
@@ -126,6 +125,7 @@ console.log(user.profilePhoto)
         email: user.email,
         role: user.role,
         profilePhoto: user.profilePhoto,
+        verification: user.verification,
       },
     })
   } catch (error) {
@@ -247,10 +247,14 @@ export const verifyOtp = async (req, res) => {
 // ======================================
 export const resetPassword = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    console.log("RESET BODY:", req.body);
+    let { email, password } = req.body;
+
+email = email.trim().toLowerCase();
+ console.log("EMAIL RECEIVED:", email);
 
     const user = await User.findOne({ email });
-
+  console.log("FOUND USER:", user);
     if (!user) {
       return res.status(404).json({
         success: false,

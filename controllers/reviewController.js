@@ -76,7 +76,7 @@ export const createReview = async (req, res) => {
       })
     }
 
-    // 6. CREATE REVIEW (correct schema)
+    // 6. CREATE REVIEW 
    const review = await Review.create({
   reviewer: customerId,
   reviewedUser: workerId,

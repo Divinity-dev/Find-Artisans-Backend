@@ -1,31 +1,36 @@
 // services/trustScoreService.js
 
 export const calculateTrustScore = ({
-  totalJobs,
-  completedJobs,
-  cancelledJobs,
-  isVerified,
+  totalJobs = 0,
+  completedJobs = 0,
+  cancelledJobs = 0,
+  isVerified = false,
 }) => {
-  let score = 0
+  // Everyone starts neutral
+  let score = 2.5;
 
-  // 1. Base trust from completed jobs (this is the ONLY positive driver)
-  score += completedJobs * 0.4
+  // Reward completed jobs
+  score += completedJobs * 0.35;
 
-  // 2. Penalize cancellations heavily
-  score -= cancelledJobs * 0.6
+  // Penalize cancellations heavily
+  score -= cancelledJobs * 0.75;
 
-  // 3. Prevent fake inflation from low activity users
-  if (totalJobs < 3) {
-    score *= 0.5
-  }
-
-  // 4. Verification = small credibility boost, not dominance
+  // Verified users get a small credibility boost
   if (isVerified) {
-    score += 0.5
+    score += 0.5;
   }
 
-  // 5. Normalize to 1–5 scale
-  score = Math.max(1, Math.min(5, score))
+  // Experienced users earn a little extra confidence
+  if (totalJobs >= 10) {
+    score += 0.3;
+  }
 
-  return Number(score.toFixed(1))
-}
+  if (totalJobs >= 25) {
+    score += 0.3;
+  }
+
+  // Clamp to 1–5
+  score = Math.max(1, Math.min(5, score));
+
+  return Number(score.toFixed(1));
+};

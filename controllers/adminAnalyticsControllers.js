@@ -55,10 +55,9 @@ export const getVerificationQueue = async (req, res) => {
     const skip = (page - 1) * limit
 
     const query = {
-      role: 'worker',
-      'verification.isVerified': false,
-      'verification.nin': { $exists: true },
-    }
+  "verification.isVerified": false,
+  "verification.nin": { $exists: true },
+}
 
     const total = await User.countDocuments(query)
 

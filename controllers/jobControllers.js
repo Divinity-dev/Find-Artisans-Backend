@@ -350,6 +350,7 @@ export const deleteJob = async (req, res) => {
 // PUBLIC CUSTOMER PROFILE
 // ===============================
 export const getPublicCustomerProfile = async (req, res) => {
+ 
   try {
     const { id } = req.params
 
@@ -396,6 +397,14 @@ export const getPublicCustomerProfile = async (req, res) => {
       cancelledJobs,
       isVerified: customer?.verification?.isVerified, // ✅ FIXED
     })
+
+     console.log({
+  totalJobs,
+  completedJobs,
+  cancelledJobs,
+  isVerified: customer?.verification?.isVerified,
+  trustScore,
+});
 
     return res.status(200).json({
       success: true,

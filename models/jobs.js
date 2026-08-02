@@ -20,7 +20,7 @@ const jobSchema = new mongoose.Schema(
 ],
 
     category: {
-      type: String, // e.g electrician, plumber
+      type: String, 
       required: true,
     },
 
