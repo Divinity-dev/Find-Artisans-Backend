@@ -1,4 +1,5 @@
 import Complaint from '../models/complaints.js'
+import mongoose from 'mongoose'
 
 // ===============================
 // CREATE COMPLAINT
@@ -99,7 +100,18 @@ export const getComplaints = async (req, res) => {
 // ===============================
 export const updateComplaintStatus = async (req, res) => {
   try {
+    const { id } = req.params
     const { status } = req.body
+
+    // =========================
+    // VALIDATE ID
+    // =========================
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid complaint ID',
+      })
+    }
 
     const allowedStatus = [
       'pending',
@@ -115,7 +127,7 @@ export const updateComplaintStatus = async (req, res) => {
       })
     }
 
-    const complaint = await Complaint.findById(req.params.id)
+    const complaint = await Complaint.findById(id)
 
     if (!complaint) {
       return res.status(404).json({
@@ -128,13 +140,16 @@ export const updateComplaintStatus = async (req, res) => {
 
     await complaint.save()
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       data: complaint,
       message: 'Complaint updated successfully',
     })
+
   } catch (error) {
-    res.status(500).json({
+    console.error('UPDATE COMPLAINT ERROR:', error)
+
+    return res.status(500).json({
       success: false,
       message: error.message,
     })

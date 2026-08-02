@@ -13,8 +13,14 @@ const jobSchema = new mongoose.Schema(
       required: true,
     },
 
+    images: [
+  {
+    type: String,
+  },
+],
+
     category: {
-      type: String, // e.g electrician, plumber
+      type: String, 
       required: true,
     },
 
@@ -22,11 +28,12 @@ const jobSchema = new mongoose.Schema(
       type: Number,
     },
 
-    location: {
-      state: String,
-      city: String,
-      address: String,
-    },
+   location: {
+  state: String,
+  city: String,
+  localGovernment: String,
+  address: String,
+},
 
     customer: {
       type: mongoose.Schema.Types.ObjectId,

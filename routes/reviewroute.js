@@ -5,6 +5,7 @@ import {
   getWorkerReviews,
   getMyReviews,
   getWorkerRatingBreakdown,
+   createWorkerToCustomerReview
 } from '../controllers/reviewController.js'
 
 import { protect } from '../middleware/authMiddleware.js'
@@ -12,6 +13,8 @@ import { protect } from '../middleware/authMiddleware.js'
 const router = express.Router()
 
 router.post('/', protect, createReview)
+
+router.post('/customer-review', protect, createWorkerToCustomerReview)
 
 router.get('/my', protect, getMyReviews)
 
