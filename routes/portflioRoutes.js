@@ -9,7 +9,7 @@ import {
   getWorkerPortfolio,
 } from '../controllers/portfolioControllers.js'
 
-import { protect, workerOnly } from '../middleware/authMiddleware.js'
+import { protect, workerOnly } from '../Middleware/authMiddleware.js'
 
 const router = express.Router()
 

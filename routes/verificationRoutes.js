@@ -6,9 +6,9 @@ import {
   adminVerifyUser,
 } from "../controllers/verificationControllers.js";
 
-import { protect, adminOnly } from "../middleware/authMiddleware.js";
+import { protect, adminOnly } from "../Middleware/authMiddleware.js";
 
-import upload from "../middleware/uploadMiddleware.js";
+import upload from "../Middleware/uploadMiddleware.js";
 
 const router = express.Router();
 
