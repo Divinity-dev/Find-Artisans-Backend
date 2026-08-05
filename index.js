@@ -15,7 +15,27 @@ import reviewRoutes from "./routes/reviewroute.js";
 
 
 const app = express();
-app.use(cors());
+// --- Universal CORS Setup ---
+const corsOptions = {
+  origin: true, // Dynamically allows any requesting origin
+  credentials: true, // Allows cookies & Authorization headers
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+  allowedHeaders: [
+    "Content-Type",
+    "Authorization",
+    "X-Requested-With",
+    "Accept",
+    "Origin",
+    "Access-Control-Allow-Headers",
+    "Access-Control-Request-Method",
+    "Access-Control-Request-Headers",
+  ],
+  exposedHeaders: ["Set-Cookie", "Authorization"],
+  optionsSuccessStatus: 200,
+};
+
+// app.use handles both standard requests and preflight OPTIONS automatically
+app.use(cors(corsOptions));
 app.use(express.json());
 
 app.use("/api/admin", adminAnalyticsRoutes);
