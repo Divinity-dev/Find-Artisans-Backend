@@ -1,7 +1,128 @@
 import User from '../models/users.js'
 import Job from '../models/jobs.js'
 import Complaint from '../models/complaints.js'
+import mongoose from 'mongoose'
 
+// ======================
+// ADMIN DELETION CONTROLLERS
+// ======================
+export const deleteAdminUser = async (req, res) => {
+  try {
+    const { id } = req.params
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid user ID',
+      })
+    }
+
+    const user = await User.findById(id)
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found',
+      })
+    }
+
+    if (user._id.toString() === req.user._id.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: 'Admin cannot delete their own account through this route',
+      })
+    }
+
+    await Promise.all([
+      Job.deleteMany({ customer: user._id }),
+      Job.deleteMany({ assignedWorker: user._id }),
+      Complaint.deleteMany({ customer: user._id }),
+      Complaint.deleteMany({ worker: user._id }),
+      user.deleteOne(),
+    ])
+
+    return res.status(200).json({
+      success: true,
+      message: 'User deleted successfully',
+    })
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    })
+  }
+}
+
+export const deleteAdminJob = async (req, res) => {
+  try {
+    const { id } = req.params
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid job ID',
+      })
+    }
+
+    const job = await Job.findById(id)
+
+    if (!job) {
+      return res.status(404).json({
+        success: false,
+        message: 'Job not found',
+      })
+    }
+
+    await Promise.all([
+      Complaint.deleteMany({ job: job._id }),
+      job.deleteOne(),
+    ])
+
+    return res.status(200).json({
+      success: true,
+      message: 'Job deleted successfully',
+    })
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    })
+  }
+}
+
+export const deleteAdminComplaint = async (req, res) => {
+  try {
+    const { id } = req.params
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid complaint ID',
+      })
+    }
+
+    const complaint = await Complaint.findById(id)
+
+    if (!complaint) {
+      return res.status(404).json({
+        success: false,
+        message: 'Complaint not found',
+      })
+    }
+
+    await complaint.deleteOne()
+
+    return res.status(200).json({
+      success: true,
+      message: 'Complaint deleted successfully',
+    })
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    })
+  }
+}
 
 // ======================
 // DASHBOARD STATS
