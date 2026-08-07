@@ -8,6 +8,9 @@ import {
   getCustomers,
   getComplaints,
   getJobs,
+  deleteAdminUser,
+  deleteAdminJob,
+  deleteAdminComplaint,
 } from '../controllers/adminAnalyticsControllers.js' 
 
 import {
@@ -30,5 +33,11 @@ router.get('/customers', protect, adminOnly, getCustomers)
 router.get('/jobs', protect, adminOnly, getJobs)
 
 router.get('/complaints', protect, adminOnly, getComplaints)
+
+router.delete('/users/:id', protect, adminOnly, deleteAdminUser)
+
+router.delete('/jobs/:id', protect, adminOnly, deleteAdminJob)
+
+router.delete('/complaints/:id', protect, adminOnly, deleteAdminComplaint)
 
 export default router
