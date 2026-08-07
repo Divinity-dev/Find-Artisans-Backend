@@ -64,24 +64,14 @@ export const createJob = async (req, res) => {
 // ===============================
 export const getAllJobs = async (req, res) => {
   try {
-    const page = Number(req.query.page) || 1
-    const limit = 10
-    const skip = (page - 1) * limit
-
-    const total = await Job.countDocuments()
-
     const jobs = await Job.find()
       .populate('customer', 'fullName phone')
       .populate('assignedWorker', 'fullName skill')
       .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit)
 
     res.status(200).json({
       success: true,
       data: jobs,
-      currentPage: page,
-      totalPages: Math.ceil(total / limit),
     })
   } catch (error) {
     res.status(500).json({
