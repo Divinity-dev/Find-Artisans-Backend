@@ -1,7 +1,7 @@
 import "./env.js";
 import express from "express";
 import cors from "cors";
-import mongoose from "mongoose";
+
 import adminAnalyticsRoutes from "./routes/adminAnalyticsRoutes.js";
 import userRoutes from "./routes/userRoute.js";
 import jobRoutes from "./routes/jobRoutes.js";
@@ -11,15 +11,27 @@ import authRoutes from "./routes/authRoute.js";
 import portfolioRoutes from "./routes/portflioRoutes.js";
 import reviewRoutes from "./routes/reviewroute.js";
 
-
-
+import connectDB from "./config/db.js";
 
 const app = express();
-// --- Universal CORS Setup ---
+
+// ======================
+// CORS
+// ======================
+
 const corsOptions = {
-  origin: true, // Dynamically allows any requesting origin
-  credentials: true, // Allows cookies & Authorization headers
-  methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+  origin: true,
+  credentials: true,
+
+  methods: [
+    "GET",
+    "POST",
+    "PUT",
+    "DELETE",
+    "PATCH",
+    "OPTIONS",
+  ],
+
   allowedHeaders: [
     "Content-Type",
     "Authorization",
@@ -30,13 +42,21 @@ const corsOptions = {
     "Access-Control-Request-Method",
     "Access-Control-Request-Headers",
   ],
-  exposedHeaders: ["Set-Cookie", "Authorization"],
+
+  exposedHeaders: [
+    "Set-Cookie",
+    "Authorization",
+  ],
+
   optionsSuccessStatus: 200,
 };
 
-// app.use handles both standard requests and preflight OPTIONS automatically
 app.use(cors(corsOptions));
 app.use(express.json());
+
+// ======================
+// ROUTES
+// ======================
 
 app.use("/api/admin", adminAnalyticsRoutes);
 app.use("/api/users", userRoutes);
@@ -47,13 +67,40 @@ app.use("/api/auth", authRoutes);
 app.use("/api/portfolio", portfolioRoutes);
 app.use("/api/reviews", reviewRoutes);
 
-console.log("ENV PATH CHECK:", process.env.CLOUDINARY_API_KEY);
+// ======================
+// HEALTH CHECK
+// ======================
 
-mongoose.connect(process.env.Mongo_url, {
-})
-.then(() => console.log("Connected to MongoDB"))
-.catch((err) => console.error("Could not connect to MongoDB", err));
-
-app.listen(process.env.PORT, () => {
-  console.log(`Server is running on port ${process.env.PORT}`);
+app.get("/", (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: "FindArtisans API is running",
+  });
 });
+
+// ======================
+// DATABASE CONNECTION
+// ======================
+
+console.log(
+  "ENV PATH CHECK:",
+  process.env.CLOUDINARY_API_KEY ? "Cloudinary key loaded" : "Cloudinary key missing"
+);
+
+connectDB().catch((error) => {
+  console.error("Initial MongoDB connection failed:", error.message);
+});
+
+// ======================
+// LOCAL SERVER
+// ======================
+
+if (process.env.NODE_ENV !== "production") {
+  const PORT = process.env.PORT || 5000;
+
+  app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
+  });
+}
+
+export default app;

@@ -4,6 +4,7 @@ import {
   getDashboardStats,
   getVerificationQueue,
   verifyWorker,
+  deleteVerificationRequest,
   getWorkers,
   getCustomers,
   getComplaints,
@@ -11,7 +12,7 @@ import {
   deleteAdminUser,
   deleteAdminJob,
   deleteAdminComplaint,
-} from '../controllers/adminAnalyticsControllers.js' 
+} from '../controllers/adminAnalyticsControllers.js'
 
 import {
   protect,
@@ -25,6 +26,8 @@ router.get('/stats', protect, adminOnly, getDashboardStats)
 router.get('/verifications', protect, adminOnly, getVerificationQueue)
 
 router.put('/verifications/:id/verify', protect, adminOnly, verifyWorker)
+
+router.delete('/verifications/:id', protect, adminOnly, deleteVerificationRequest)
 
 router.get('/workers', protect, adminOnly, getWorkers)
 
