@@ -202,11 +202,24 @@ export const getVerificationQueue = async (req, res) => {
 }
 
 // ======================
-// VERIFY WORKER
+// VERIFY / REJECT WORKER
 // ======================
 export const verifyWorker = async (req, res) => {
   try {
-    const worker = await User.findById(req.params.id)
+    const { id } = req.params
+    const { isVerified } = req.body
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid worker ID',
+      })
+    }
+
+    const worker = await User.findOne({
+      _id: id,
+      role: 'worker',
+    })
 
     if (!worker) {
       return res.status(404).json({
@@ -219,17 +232,78 @@ export const verifyWorker = async (req, res) => {
       worker.verification = {}
     }
 
-    worker.verification.isVerified = true
-    worker.verification.verifiedAt = new Date()
+    worker.verification.isVerified = Boolean(isVerified)
+
+    if (isVerified) {
+      worker.verification.verifiedAt = new Date()
+    } else {
+      worker.verification.verifiedAt = null
+    }
 
     await worker.save()
 
-    res.json({
+    return res.status(200).json({
       success: true,
-      message: 'Worker verified',
+      message: isVerified
+        ? 'Worker verified successfully'
+        : 'Worker verification rejected',
     })
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message })
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    })
+  }
+}
+
+// ======================
+// DELETE / REJECT VERIFICATION
+// ======================
+export const deleteVerificationRequest = async (req, res) => {
+  try {
+    const { id } = req.params
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid worker ID',
+      })
+    }
+
+    const worker = await User.findOne({
+      _id: id,
+      role: 'worker',
+    })
+
+    if (!worker) {
+      return res.status(404).json({
+        success: false,
+        message: 'Worker not found',
+      })
+    }
+
+    if (!worker.verification) {
+      return res.status(404).json({
+        success: false,
+        message: 'No verification request found',
+      })
+    }
+
+    // Remove only the verification data.
+    // The worker account remains intact.
+    worker.verification = undefined
+
+    await worker.save()
+
+    return res.status(200).json({
+      success: true,
+      message: 'Verification request rejected successfully',
+    })
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    })
   }
 }
 
