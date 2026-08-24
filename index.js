@@ -55,17 +55,12 @@ app.use(cors(corsOptions));
 app.use(express.json());
 
 // ======================
-// ROUTES
+// DATABASE CONNECTION
 // ======================
 
-app.use("/api/admin", adminAnalyticsRoutes);
-app.use("/api/users", userRoutes);
-app.use("/api/jobs", jobRoutes);
-app.use("/api/complaints", complaintRoutes);
-app.use("/api/verification", verificationRoutes);
-app.use("/api/auth", authRoutes);
-app.use("/api/portfolio", portfolioRoutes);
-app.use("/api/reviews", reviewRoutes);
+
+
+
 
 // ======================
 // HEALTH CHECK
@@ -79,28 +74,37 @@ app.get("/", (req, res) => {
 });
 
 // ======================
-// DATABASE CONNECTION
+// ROUTES
 // ======================
 
-console.log(
-  "ENV PATH CHECK:",
-  process.env.CLOUDINARY_API_KEY ? "Cloudinary key loaded" : "Cloudinary key missing"
-);
-
-connectDB().catch((error) => {
-  console.error("Initial MongoDB connection failed:", error.message);
-});
+app.use("/api/admin", adminAnalyticsRoutes);
+app.use("/api/users", userRoutes);
+app.use("/api/jobs", jobRoutes);
+app.use("/api/complaints", complaintRoutes);
+app.use("/api/verification", verificationRoutes);
+app.use("/api/auth", authRoutes);
+app.use("/api/portfolio", portfolioRoutes);
+app.use("/api/reviews", reviewRoutes);
 
 // ======================
 // LOCAL SERVER
 // ======================
 
-if (process.env.NODE_ENV !== "production") {
-  const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5000;
 
-  app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
-  });
-}
+const startServer = async () => {
+  try {
+    await connectDB();
+
+    app.listen(PORT, () => {
+      console.log(`Server is running on port ${PORT}`);
+    });
+  } catch (error) {
+    console.error("Failed to start server:", error.message);
+    process.exit(1);
+  }
+};
+
+startServer();
 
 export default app;

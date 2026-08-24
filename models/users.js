@@ -69,7 +69,7 @@ customerReviews: {
   default: 0,
 },
 
-   location: {
+  location: {
   state: {
     type: String,
     trim: true,
@@ -89,6 +89,19 @@ customerReviews: {
     type: String,
     trim: true,
   },
+
+coordinates: {
+  type: {
+    type: String,
+    enum: ['Point'],
+    default: 'Point',
+  },
+
+  coordinates: {
+    type: [Number],
+    default: undefined,
+  },
+},
 },
 
     about: {
@@ -166,6 +179,10 @@ customerReviews: {
     timestamps: true,
   }
 )
+
+userSchema.index({
+  'location.coordinates': '2dsphere',
+})
 
 export default mongoose.model('User', userSchema)
 
