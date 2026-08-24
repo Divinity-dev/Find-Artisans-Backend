@@ -144,35 +144,38 @@ export const updateMyProfile = async (req, res) => {
       user.availability = availability
     }
 
-    // ======================================
-    // LOCATION
-    // ======================================
+   // ======================================
+// LOCATION
+// ======================================
 
-    if (location) {
-      user.location = {
-        state:
-          location.state || user.location?.state,
+if (location) {
+  user.location = {
+    state:
+      location.state || user.location?.state,
 
-        city:
-          location.city || user.location?.city,
+    city:
+      location.city || user.location?.city,
 
-        localGovernment:
-          location.localGovernment ||
-          user.location?.localGovernment,
+    localGovernment:
+      location.localGovernment ||
+      user.location?.localGovernment,
 
-        address:
-          location.address ||
-          user.location?.address,
+    address:
+      location.address ||
+      user.location?.address,
 
-        latitude:
-          location.latitude ||
-          user.location?.latitude,
-
-        longitude:
-          location.longitude ||
-          user.location?.longitude,
-      }
-    }
+    coordinates:
+      location.coordinates?.coordinates?.length === 2
+        ? {
+            type: 'Point',
+            coordinates: [
+              Number(location.coordinates.coordinates[0]),
+              Number(location.coordinates.coordinates[1]),
+            ],
+          }
+        : user.location?.coordinates,
+  }
+}
 
     // ======================================
     // SAVE USER
@@ -257,29 +260,88 @@ const stats = {
 // ======================================
 export const getAllWorkers = async (req, res) => {
   try {
+    const {
+      skill,
+      state,
+      city,
+      localGovernment,
+      latitude,
+      longitude,
+      radius = 25,
+    } = req.query
+
     const query = {
       role: 'worker',
       isSuspended: false,
       isActive: true,
     }
 
-    // Optional Filters
-    if (req.query.skill) {
-      query.skill = req.query.skill
+    // ==============================
+    // NORMAL LOCATION FILTERS
+    // ==============================
+
+    if (state) {
+      query['location.state'] = state
     }
 
-    if (req.query.state) {
-      query['location.state'] = req.query.state
+    if (city) {
+      query['location.city'] = city
     }
 
-    if (req.query.city) {
-      query['location.city'] = req.query.city
+    if (localGovernment) {
+      query['location.localGovernment'] = localGovernment
     }
 
-    if (req.query.localGovernment) {
-      query['location.localGovernment'] =
-        req.query.localGovernment
+    // ==============================
+    // SKILL SEARCH
+    // ==============================
+
+    if (skill) {
+      query.$or = [
+        {
+          skill: {
+            $regex: skill,
+            $options: 'i',
+          },
+        },
+        {
+          skills: {
+            $regex: skill,
+            $options: 'i',
+          },
+        },
+      ]
     }
+
+    // ==============================
+    // LOCATION SEARCH
+    // ==============================
+
+    const hasCoordinates =
+      latitude !== undefined &&
+      longitude !== undefined &&
+      !Number.isNaN(Number(latitude)) &&
+      !Number.isNaN(Number(longitude))
+
+    if (hasCoordinates) {
+      const lat = Number(latitude)
+      const lng = Number(longitude)
+      const radiusInMeters = Number(radius) * 1000
+
+      query['location.coordinates'] = {
+        $near: {
+          $geometry: {
+            type: 'Point',
+            coordinates: [lng, lat],
+          },
+          $maxDistance: radiusInMeters,
+        },
+      }
+    }
+
+    // ==============================
+    // GET WORKERS
+    // ==============================
 
     const workers = await User.find(query)
       .select('-password')
@@ -291,6 +353,8 @@ export const getAllWorkers = async (req, res) => {
       workers,
     })
   } catch (error) {
+    console.error('Get all workers error:', error)
+
     res.status(500).json({
       success: false,
       message: error.message,
