@@ -58,23 +58,120 @@ export const createJob = async (req, res) => {
     });
   }
 };
-
 // ===============================
-// GET ALL JOBS (ADMIN + USER SAFE)
+// GET ALL JOBS (FILTERED + PAGINATED)
 // ===============================
 export const getAllJobs = async (req, res) => {
   try {
-    const jobs = await Job.find()
-      .populate('customer', 'fullName phone')
-      .populate('assignedWorker', 'fullName skill')
-      .sort({ createdAt: -1 })
+    const {
+      search,
+      page = 1,
+      limit = 12,
+    } = req.query
 
-    res.status(200).json({
+    // ======================================
+    // PAGINATION
+    // ======================================
+
+    const currentPage = Math.max(
+      1,
+      Number.parseInt(page, 10) || 1
+    )
+
+    const itemsPerPage = Math.min(
+      50,
+      Math.max(
+        1,
+        Number.parseInt(limit, 10) || 12
+      )
+    )
+
+    const skip =
+      (currentPage - 1) * itemsPerPage
+
+    // ======================================
+    // BUILD QUERY
+    // ======================================
+
+    const query = {}
+
+    // ======================================
+    // SEARCH
+    // Search:
+    // - title
+    // - description
+    // - category
+    // ======================================
+
+    if (search?.trim()) {
+      const searchTerm = search.trim()
+
+      query.$or = [
+        {
+          title: {
+            $regex: searchTerm,
+            $options: 'i',
+          },
+        },
+        {
+          description: {
+            $regex: searchTerm,
+            $options: 'i',
+          },
+        },
+        {
+          category: {
+            $regex: searchTerm,
+            $options: 'i',
+          },
+        },
+      ]
+    }
+
+    // ======================================
+    // GET JOBS + TOTAL COUNT
+    // ======================================
+
+    const [jobs, total] = await Promise.all([
+      Job.find(query)
+        .populate('customer', 'fullName phone')
+        .populate('assignedWorker', 'fullName skill')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(itemsPerPage)
+        .lean(),
+
+      Job.countDocuments(query),
+    ])
+
+    // ======================================
+    // TOTAL PAGES
+    // ======================================
+
+    const totalPages = Math.max(
+      1,
+      Math.ceil(total / itemsPerPage)
+    )
+
+    // ======================================
+    // RESPONSE
+    // ======================================
+
+    return res.status(200).json({
       success: true,
-      data: jobs,
+      total,
+      totalPages,
+      currentPage,
+      limit: itemsPerPage,
+      jobs,
     })
   } catch (error) {
-    res.status(500).json({
+    console.error(
+      'Get all jobs error:',
+      error
+    )
+
+    return res.status(500).json({
       success: false,
       message: error.message,
     })

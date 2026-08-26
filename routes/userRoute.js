@@ -5,6 +5,7 @@ import express from 'express'
 import {
   getMyProfile,
   updateMyProfile,
+  updateMyLocation,
   getSingleUser,
   getAllWorkers,
   updateAvailability,
@@ -38,12 +39,11 @@ router.delete('/me', protect, deleteMyAccount)
 // Get All Workers 
 router.get('/workers/all', getAllWorkers)
 
-// Get Single User
-router.get('/:id', getSingleUser)
-
-// ======================================
-// WORKER ROUTES
-// ======================================
+router.patch(
+  '/location',
+  protect,
+  updateMyLocation
+)
 
 // Update Worker Availability
 router.patch(
@@ -52,5 +52,12 @@ router.patch(
   workerOnly,
   updateAvailability
 )
+
+// Get Single User
+router.get('/:id', getSingleUser)
+
+
+
+
 
 export default router
