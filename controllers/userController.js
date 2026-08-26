@@ -255,12 +255,14 @@ const stats = {
   }
 }
 
-// ======================================
+
 // GET ALL WORKERS
+// SERVER-SIDE FILTERING + PAGINATION
 // ======================================
 export const getAllWorkers = async (req, res) => {
   try {
     const {
+      search,
       skill,
       state,
       city,
@@ -268,7 +270,33 @@ export const getAllWorkers = async (req, res) => {
       latitude,
       longitude,
       radius = 25,
+      page = 1,
+      limit = 12,
     } = req.query
+
+    // ======================================
+    // PAGINATION
+    // ======================================
+
+    const currentPage = Math.max(
+      1,
+      Number.parseInt(page, 10) || 1
+    )
+
+    const itemsPerPage = Math.min(
+      50,
+      Math.max(
+        1,
+        Number.parseInt(limit, 10) || 12
+      )
+    )
+
+    const skip =
+      (currentPage - 1) * itemsPerPage
+
+    // ======================================
+    // BASIC WORKER QUERY
+    // ======================================
 
     const query = {
       role: 'worker',
@@ -276,9 +304,9 @@ export const getAllWorkers = async (req, res) => {
       isActive: true,
     }
 
-    // ==============================
-    // NORMAL LOCATION FILTERS
-    // ==============================
+    // ======================================
+    // LOCATION FILTERS
+    // ======================================
 
     if (state) {
       query['location.state'] = state
@@ -289,33 +317,47 @@ export const getAllWorkers = async (req, res) => {
     }
 
     if (localGovernment) {
-      query['location.localGovernment'] = localGovernment
+      query['location.localGovernment'] =
+        localGovernment
     }
 
-    // ==============================
-    // SKILL SEARCH
-    // ==============================
+    // ======================================
+    // SEARCH
+    // Searches:
+    // - fullName
+    // - skill
+    // - skills
+    // ======================================
 
-    if (skill) {
+    const searchValue =
+      search?.trim() || skill?.trim()
+
+    if (searchValue) {
       query.$or = [
         {
+          fullName: {
+            $regex: searchValue,
+            $options: 'i',
+          },
+        },
+        {
           skill: {
-            $regex: skill,
+            $regex: searchValue,
             $options: 'i',
           },
         },
         {
           skills: {
-            $regex: skill,
+            $regex: searchValue,
             $options: 'i',
           },
         },
       ]
     }
 
-    // ==============================
-    // LOCATION SEARCH
-    // ==============================
+    // ======================================
+    // CHECK GEOLOCATION
+    // ======================================
 
     const hasCoordinates =
       latitude !== undefined &&
@@ -323,39 +365,184 @@ export const getAllWorkers = async (req, res) => {
       !Number.isNaN(Number(latitude)) &&
       !Number.isNaN(Number(longitude))
 
+    // ======================================
+    // NEARBY SEARCH
+    // ======================================
+
     if (hasCoordinates) {
       const lat = Number(latitude)
       const lng = Number(longitude)
-      const radiusInMeters = Number(radius) * 1000
 
-      query['location.coordinates'] = {
-        $near: {
-          $geometry: {
-            type: 'Point',
-            coordinates: [lng, lat],
-          },
-          $maxDistance: radiusInMeters,
-        },
+      const radiusInMeters =
+        Number(radius) * 1000
+
+      const geoQuery = {
+        role: 'worker',
+        isSuspended: false,
+        isActive: true,
       }
+
+      // --------------------------------------
+      // LOCATION FILTERS
+      // --------------------------------------
+
+      if (state) {
+        geoQuery['location.state'] = state
+      }
+
+      if (city) {
+        geoQuery['location.city'] = city
+      }
+
+      if (localGovernment) {
+        geoQuery['location.localGovernment'] =
+          localGovernment
+      }
+
+      // --------------------------------------
+      // SEARCH
+      // --------------------------------------
+
+      if (searchValue) {
+        geoQuery.$or = [
+          {
+            fullName: {
+              $regex: searchValue,
+              $options: 'i',
+            },
+          },
+          {
+            skill: {
+              $regex: searchValue,
+              $options: 'i',
+            },
+          },
+          {
+            skills: {
+              $regex: searchValue,
+              $options: 'i',
+            },
+          },
+        ]
+      }
+
+      // --------------------------------------
+      // GEO SEARCH
+      // --------------------------------------
+
+      const results =
+        await User.aggregate([
+          {
+  $geoNear: {
+    near: {
+      type: 'Point',
+      coordinates: [lng, lat],
+    },
+
+    key: 'location.coordinates',
+
+    distanceField: 'distance',
+
+    maxDistance: radiusInMeters,
+
+    spherical: true,
+
+    query: geoQuery,
+  },
+},
+
+{
+  $project: {
+    password: 0,
+  },
+},
+
+          {
+            $facet: {
+              metadata: [
+                {
+                  $count: 'total',
+                },
+              ],
+
+              workers: [
+                {
+                  $skip: skip,
+                },
+                {
+                  $limit: itemsPerPage,
+                },
+              ],
+            },
+          },
+        ])
+
+      const result = results[0] || {
+        metadata: [],
+        workers: [],
+      }
+
+      const total =
+        result.metadata[0]?.total || 0
+
+      const totalPages = Math.max(
+        1,
+        Math.ceil(total / itemsPerPage)
+      )
+
+      return res.status(200).json({
+        success: true,
+        total,
+        totalPages,
+        currentPage,
+        limit: itemsPerPage,
+        workers: result.workers,
+      })
     }
 
-    // ==============================
-    // GET WORKERS
-    // ==============================
+    // ======================================
+    // NORMAL SEARCH
+    // ======================================
 
-    const workers = await User.find(query)
-      .select('-password')
-      .sort({ createdAt: -1 })
+    const [workers, total] =
+      await Promise.all([
+        User.find(query)
+          .select('-password')
+          .sort({ createdAt: -1 })
+          .skip(skip)
+          .limit(itemsPerPage),
 
-    res.status(200).json({
+        User.countDocuments(query),
+      ])
+
+    // ======================================
+    // TOTAL PAGES
+    // ======================================
+
+    const totalPages = Math.max(
+      1,
+      Math.ceil(total / itemsPerPage)
+    )
+
+    // ======================================
+    // RESPONSE
+    // ======================================
+
+    return res.status(200).json({
       success: true,
-      total: workers.length,
+      total,
+      totalPages,
+      currentPage,
+      limit: itemsPerPage,
       workers,
     })
   } catch (error) {
-    console.error('Get all workers error:', error)
+    console.error(
+      'Get all workers error:',
+      error
+    )
 
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: error.message,
     })
@@ -430,6 +617,99 @@ export const deleteMyAccount = async (req, res) => {
     })
   } catch (error) {
     res.status(500).json({
+      success: false,
+      message: error.message,
+    })
+  }
+}
+
+// ======================================
+// UPDATE MY CURRENT LOCATION
+// ======================================
+export const updateMyLocation = async (req, res) => {
+  try {
+    const { latitude, longitude } = req.body
+
+    const lat = Number(latitude)
+    const lng = Number(longitude)
+
+    // ======================================
+    // VALIDATE COORDINATES
+    // ======================================
+
+    if (
+      !Number.isFinite(lat) ||
+      !Number.isFinite(lng)
+    ) {
+      return res.status(400).json({
+        success: false,
+        message:
+          'Valid latitude and longitude are required',
+      })
+    }
+
+    if (lat < -90 || lat > 90) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid latitude',
+      })
+    }
+
+    if (lng < -180 || lng > 180) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid longitude',
+      })
+    }
+
+    // ======================================
+    // FIND USER
+    // ======================================
+
+    const user = await User.findById(req.user._id)
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found',
+      })
+    }
+
+    // ======================================
+    // PERSIST GPS LOCATION
+    // ======================================
+
+    user.location = {
+      ...(user.location?.toObject?.() || user.location || {}),
+
+      coordinates: {
+        type: 'Point',
+        coordinates: [lng, lat],
+      },
+    }
+
+    await user.save()
+
+    // ======================================
+    // RESPONSE
+    // ======================================
+
+    return res.status(200).json({
+      success: true,
+      message: 'Location updated successfully',
+
+      coordinates: {
+        type: 'Point',
+        coordinates: [lng, lat],
+      },
+    })
+  } catch (error) {
+    console.error(
+      'Update location error:',
+      error
+    )
+
+    return res.status(500).json({
       success: false,
       message: error.message,
     })
