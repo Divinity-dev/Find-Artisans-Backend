@@ -1,17 +1,31 @@
 import express from 'express'
 
 import {
+
   getDashboardStats,
+
   getVerificationQueue,
+
   verifyWorker,
+
   deleteVerificationRequest,
+
   getWorkers,
+
   getCustomers,
+
   getComplaints,
+
   getJobs,
+
   deleteAdminUser,
+
   deleteAdminJob,
+
   deleteAdminComplaint,
+
+  sendAdminEmail,
+
 } from '../controllers/adminAnalyticsControllers.js'
 
 import {
@@ -24,6 +38,8 @@ const router = express.Router()
 router.get('/stats', protect, adminOnly, getDashboardStats)
 
 router.get('/verifications', protect, adminOnly, getVerificationQueue)
+
+router.post('/email', protect, adminOnly, sendAdminEmail)
 
 router.put('/verifications/:id/verify', protect, adminOnly, verifyWorker)
 

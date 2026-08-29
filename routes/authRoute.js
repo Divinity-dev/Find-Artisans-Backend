@@ -4,6 +4,7 @@ import express from 'express'
 
 import {
   registerUser,
+   verifyEmail,
   loginUser,
   forgotPassword,
   verifyOtp,
@@ -20,6 +21,12 @@ const router = express.Router()
 
 // Register
 router.post('/register', registerUser)
+
+// Email verify
+router.get(
+  '/verify-email/:token',
+  verifyEmail
+)
 
 // Login
 router.post('/login', loginUser)
