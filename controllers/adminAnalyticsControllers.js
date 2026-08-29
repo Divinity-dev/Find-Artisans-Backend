@@ -2,6 +2,7 @@ import User from '../models/users.js'
 import Job from '../models/jobs.js'
 import Complaint from '../models/complaints.js'
 import mongoose from 'mongoose'
+import sendEmail from '../utils/sendEmail.js'
 
 // ======================
 // ADMIN DELETION CONTROLLERS
@@ -415,5 +416,168 @@ export const getComplaints = async (req, res) => {
     })
   } catch (error) {
     res.status(500).json({ success: false, message: error.message })
+  }
+}
+
+// ======================
+// SEND ADMIN EMAIL
+// ======================
+export const sendAdminEmail = async (req, res) => {
+  try {
+    const {
+      audience,
+      subject,
+      message,
+    } = req.body
+
+    // ======================
+    // VALIDATION
+    // ======================
+
+    if (!audience) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please select an audience',
+      })
+    }
+
+    if (!['workers', 'customers', 'everyone'].includes(audience)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid audience',
+      })
+    }
+
+    if (!subject?.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email subject is required',
+      })
+    }
+
+    if (!message?.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email message is required',
+      })
+    }
+
+    // ======================
+    // DETERMINE RECIPIENTS
+    // ======================
+
+    let userQuery = {}
+
+    if (audience === 'workers') {
+      userQuery = {
+        role: 'worker',
+      }
+    }
+
+    if (audience === 'customers') {
+      userQuery = {
+        role: 'customer',
+      }
+    }
+
+    if (audience === 'everyone') {
+      userQuery = {
+        role: {
+          $in: ['worker', 'customer'],
+        },
+      }
+    }
+
+    // ======================
+    // GET USERS
+    // ======================
+
+    const users = await User.find(userQuery)
+      .select('email fullName')
+
+    if (!users.length) {
+      return res.status(404).json({
+        success: false,
+        message: 'No recipients found',
+      })
+    }
+
+    // ======================
+    // CREATE EMAIL HTML
+    // ======================
+
+    const html = `
+      <div
+        style="
+          font-family: Arial, sans-serif;
+          line-height: 1.6;
+          color: #111827;
+        "
+      >
+        <h2>FindArtisans</h2>
+
+        <p>
+          ${message.replace(/\n/g, '<br />')}
+        </p>
+
+        <br />
+
+        <p>
+          Regards,<br />
+          <strong>FindArtisans Team</strong>
+        </p>
+      </div>
+    `
+
+    // ======================
+    // SEND EMAILS
+    // ======================
+
+    let sent = 0
+    let failed = 0
+
+    for (const user of users) {
+      try {
+        await sendEmail(
+          user.email,
+          subject.trim(),
+          html
+        )
+
+        sent++
+      } catch (emailError) {
+        failed++
+
+        console.error(
+          `Failed to send email to ${user.email}:`,
+          emailError.message
+        )
+      }
+    }
+
+    // ======================
+    // RESPONSE
+    // ======================
+
+    return res.status(200).json({
+      success: true,
+      message: 'Email campaign completed',
+      stats: {
+        totalRecipients: users.length,
+        sent,
+        failed,
+      },
+    })
+
+  } catch (error) {
+    console.error(
+      'Admin email error:',
+      error
+    )
+
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    })
   }
 }

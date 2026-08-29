@@ -5,6 +5,8 @@ import jwt from 'jsonwebtoken'
 import crypto from 'crypto'
 import sendEmail from '../utils/sendEmail.js'
 import User from '../models/users.js'
+import welcomeEmail from '../utils/emailTemplates/welcomeEmail.js'
+import verificationEmail from '../utils/emailTemplates/verificationEmail.js'
 
 // ======================================
 // GENERATE JWT
@@ -28,8 +30,17 @@ export const registerUser = async (req, res) => {
       role,
     } = req.body
 
-    // Check Existing User
-    const existingUser = await User.findOne({ email })
+    // ======================================
+    // NORMALIZE EMAIL
+    // ======================================
+    const normalizedEmail = email.trim().toLowerCase()
+
+    // ======================================
+    // CHECK EXISTING USER
+    // ======================================
+    const existingUser = await User.findOne({
+      email: normalizedEmail,
+    })
 
     if (existingUser) {
       return res.status(400).json({
@@ -38,7 +49,9 @@ export const registerUser = async (req, res) => {
       })
     }
 
-    // Hash Password
+    // ======================================
+    // HASH PASSWORD
+    // ======================================
     const salt = await bcrypt.genSalt(10)
 
     const hashedPassword = await bcrypt.hash(
@@ -46,26 +59,94 @@ export const registerUser = async (req, res) => {
       salt
     )
 
-    // Create User
+    // ======================================
+    // GENERATE EMAIL VERIFICATION TOKEN
+    // ======================================
+    const verificationToken =
+      crypto.randomBytes(32).toString('hex')
+
+    // Hash token before storing it
+    const hashedVerificationToken = crypto
+      .createHash('sha256')
+      .update(verificationToken)
+      .digest('hex')
+
+    // ======================================
+    // CREATE USER
+    // ======================================
     const user = await User.create({
       fullName,
-      email,
+      email: normalizedEmail,
       password: hashedPassword,
       phone,
       role,
+
+      // Email verification
+      isEmailVerified: false,
+      emailVerificationToken: hashedVerificationToken,
+      emailVerificationExpires:
+        Date.now() + 24 * 60 * 60 * 1000,
     })
 
+    // ======================================
+    // CREATE VERIFICATION URL
+    // ======================================
+    const verificationUrl =
+  `${process.env.BACKEND_URL}/api/auth/verify-email/${verificationToken}`
+
+    // ======================================
+    // SEND WELCOME EMAIL
+    // ======================================
+    try {
+      await sendEmail(
+        user.email,
+        'Welcome to FindArtisans 🎉',
+        welcomeEmail(user.fullName)
+      )
+    } catch (emailError) {
+      // Email failure should NOT prevent account creation
+      console.error(
+        'Welcome email failed:',
+        emailError.message
+      )
+    }
+
+    // ======================================
+    // SEND VERIFICATION EMAIL
+    // ======================================
+    try {
+      await sendEmail(
+        user.email,
+        'Verify your FindArtisans email',
+        verificationEmail(
+          user.fullName,
+          verificationUrl
+        )
+      )
+    } catch (emailError) {
+      // Email failure should NOT prevent account creation
+      console.error(
+        'Verification email failed:',
+        emailError.message
+      )
+    }
+
+    // ======================================
+    // RESPONSE
+    // ======================================
     res.status(201).json({
-      success: true,
-      message: 'Account created successfully',
-      token: generateToken(user._id),
-      user: {
-        _id: user._id,
-        fullName: user.fullName,
-        email: user.email,
-        role: user.role,
-      },
-    })
+  success: true,
+  message:
+    'Account created successfully. Please check your email to verify your account.',
+  user: {
+    _id: user._id,
+    fullName: user.fullName,
+    email: user.email,
+    role: user.role,
+    isEmailVerified: user.isEmailVerified,
+  },
+})
+
   } catch (error) {
     res.status(500).json({
       success: false,
@@ -75,14 +156,95 @@ export const registerUser = async (req, res) => {
 }
 
 // ======================================
+// VERIFY EMAIL
+// ======================================
+export const verifyEmail = async (req, res) => {
+  try {
+    const { token } = req.params
+
+    if (!token) {
+      return res.status(400).send(`
+        <h2>Email verification failed</h2>
+        <p>Verification token is missing.</p>
+      `)
+    }
+
+    // Hash token from URL
+    const hashedToken = crypto
+      .createHash('sha256')
+      .update(token)
+      .digest('hex')
+
+    // Find user
+    const user = await User.findOne({
+      emailVerificationToken: hashedToken,
+    })
+
+    if (!user) {
+      return res.status(400).send(`
+        <h2>Invalid verification link</h2>
+        <p>This verification link is invalid or has already been used.</p>
+      `)
+    }
+
+    // Check expiration
+    if (
+      !user.emailVerificationExpires ||
+      user.emailVerificationExpires < Date.now()
+    ) {
+      return res.status(400).send(`
+        <h2>Verification link expired</h2>
+        <p>
+          This verification link has expired.
+          Please request a new verification email.
+        </p>
+      `)
+    }
+
+    // Mark email as verified
+    user.isEmailVerified = true
+
+    // Remove verification token
+    user.emailVerificationToken = null
+    user.emailVerificationExpires = null
+
+    await user.save()
+
+    // Redirect user back to FindArtisans
+    return res.redirect(
+      'https://www.find-artisans.com/login?verified=true'
+    )
+
+  } catch (error) {
+    console.error(
+      'Email verification error:',
+      error
+    )
+
+    return res.status(500).send(`
+      <h2>Something went wrong</h2>
+      <p>
+        We couldn't verify your email at this time.
+        Please try again later.
+      </p>
+    `)
+  }
+}
+
+
+// ======================================
 // LOGIN USER
 // ======================================
 export const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body
 
+const normalizedEmail = email.trim().toLowerCase()
+
     // Find User
-    const user = await User.findOne({ email })
+    const user = await User.findOne({
+  email: normalizedEmail,
+})
 
     if (!user) {
       return res.status(400).json({
@@ -104,6 +266,17 @@ export const loginUser = async (req, res) => {
       })
     }
 
+    // ======================================
+    // CHECK EMAIL VERIFICATION
+    // ======================================
+    if (!user.isEmailVerified) {
+      return res.status(403).json({
+        success: false,
+        message:
+          'Please verify your email before logging in.',
+      })
+    }
+
     // Check Suspension
     if (user.isSuspended) {
       return res.status(403).json({
@@ -115,6 +288,7 @@ export const loginUser = async (req, res) => {
     user.lastLogin = new Date()
 
     await user.save()
+
     res.status(200).json({
       success: true,
       message: 'Login successful',
@@ -126,6 +300,7 @@ export const loginUser = async (req, res) => {
         role: user.role,
         profilePhoto: user.profilePhoto,
         verification: user.verification,
+        isEmailVerified: user.isEmailVerified,
       },
     })
   } catch (error) {
