@@ -9,6 +9,7 @@ const verificationSchema = new mongoose.Schema(
 
     governmentId: {
       type: String,
+      trim: true,
     },
 
     isVerified: {
@@ -18,6 +19,7 @@ const verificationSchema = new mongoose.Schema(
 
     verifiedAt: {
       type: Date,
+      default: null,
     },
   },
   {

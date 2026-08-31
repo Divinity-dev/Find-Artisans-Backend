@@ -24,11 +24,10 @@ export const submitVerification = async (req, res) => {
     }
 
     user.verification = {
-      nin,
+      nin: nin.trim(),
       governmentId,
       isVerified: false,
       verifiedAt: null,
-      status: 'pending',
     }
 
     await user.save()
@@ -39,6 +38,8 @@ export const submitVerification = async (req, res) => {
       data: user.verification,
     })
   } catch (error) {
+    console.error('SUBMIT VERIFICATION ERROR:', error)
+
     return res.status(500).json({
       success: false,
       message: error.message,
@@ -66,7 +67,7 @@ export const getMyVerification = async (req, res) => {
         nin: null,
         governmentId: null,
         isVerified: false,
-        status: 'not_submitted',
+        verifiedAt: null,
       },
     })
   } catch (error) {
@@ -94,11 +95,11 @@ export const adminVerifyUser = async (req, res) => {
       })
     }
 
-    user.verification = user.verification || {}
+    if (!user.verification) {
+      user.verification = {}
+    }
 
     user.verification.isVerified = isVerified
-
-    user.verification.status = isVerified ? 'verified' : 'rejected'
 
     user.verification.verifiedAt = isVerified
       ? new Date()
@@ -112,6 +113,8 @@ export const adminVerifyUser = async (req, res) => {
       data: user.verification,
     })
   } catch (error) {
+    console.error('ADMIN VERIFY ERROR:', error)
+
     return res.status(500).json({
       success: false,
       message: error.message,

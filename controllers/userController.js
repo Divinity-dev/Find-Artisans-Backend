@@ -149,31 +149,51 @@ export const updateMyProfile = async (req, res) => {
 // ======================================
 
 if (location) {
-  user.location = {
-    state:
-      location.state || user.location?.state,
+  user.location.state =
+    location.state ?? user.location?.state ?? ''
 
-    city:
-      location.city || user.location?.city,
+  user.location.city =
+    location.city ?? user.location?.city ?? ''
 
-    localGovernment:
-      location.localGovernment ||
-      user.location?.localGovernment,
+  user.location.localGovernment =
+    location.localGovernment ??
+    user.location?.localGovernment ??
+    ''
 
-    address:
-      location.address ||
-      user.location?.address,
+  if (location.address !== undefined) {
+    user.location.address = location.address
+  }
 
-    coordinates:
-      location.coordinates?.coordinates?.length === 2
-        ? {
-            type: 'Point',
-            coordinates: [
-              Number(location.coordinates.coordinates[0]),
-              Number(location.coordinates.coordinates[1]),
-            ],
-          }
-        : user.location?.coordinates,
+  // Only update coordinates when valid coordinates
+  // are actually supplied.
+  if (
+    Array.isArray(location.coordinates?.coordinates) &&
+    location.coordinates.coordinates.length === 2
+  ) {
+    const longitude = Number(
+      location.coordinates.coordinates[0]
+    )
+
+    const latitude = Number(
+      location.coordinates.coordinates[1]
+    )
+
+    if (
+      Number.isFinite(longitude) &&
+      Number.isFinite(latitude) &&
+      longitude >= -180 &&
+      longitude <= 180 &&
+      latitude >= -90 &&
+      latitude <= 90
+    ) {
+      user.location.coordinates = {
+        type: 'Point',
+        coordinates: [
+          longitude,
+          latitude,
+        ],
+      }
+    }
   }
 }
 
