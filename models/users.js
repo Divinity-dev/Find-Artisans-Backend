@@ -84,7 +84,7 @@ customerReviews: {
   default: 0,
 },
 
-  location: {
+ location: {
   state: {
     type: String,
     trim: true,
@@ -105,18 +105,16 @@ customerReviews: {
     trim: true,
   },
 
-coordinates: {
-  type: {
-    type: String,
-    enum: ['Point'],
-    default: 'Point',
-  },
-
   coordinates: {
-    type: [Number],
-    default: undefined,
+    type: {
+      type: String,
+      enum: ['Point'],
+    },
+
+    coordinates: {
+      type: [Number],
+    },
   },
-},
 },
 
     about: {

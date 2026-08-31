@@ -6,7 +6,7 @@ import {
 
   getVerificationQueue,
 
-  verifyWorker,
+  verifyUser,
 
   deleteVerificationRequest,
 
@@ -41,7 +41,7 @@ router.get('/verifications', protect, adminOnly, getVerificationQueue)
 
 router.post('/email', protect, adminOnly, sendAdminEmail)
 
-router.put('/verifications/:id/verify', protect, adminOnly, verifyWorker)
+router.put('/verifications/:id/verify', protect, adminOnly, verifyUser)
 
 router.delete('/verifications/:id', protect, adminOnly, deleteVerificationRequest)
 

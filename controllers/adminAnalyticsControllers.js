@@ -176,9 +176,9 @@ export const getVerificationQueue = async (req, res) => {
     const limit = 10
     const skip = (page - 1) * limit
 
-    const query = {
+  const query = {
+  role: { $in: ['worker', 'customer'] },
   "verification.isVerified": false,
-  "verification.nin": { $exists: true },
 }
 
     const total = await User.countDocuments(query)
@@ -203,9 +203,9 @@ export const getVerificationQueue = async (req, res) => {
 }
 
 // ======================
-// VERIFY / REJECT WORKER
+// VERIFY / REJECT USER
 // ======================
-export const verifyWorker = async (req, res) => {
+export const verifyUser = async (req, res) => {
   try {
     const { id } = req.params
     const { isVerified } = req.body
@@ -213,43 +213,45 @@ export const verifyWorker = async (req, res) => {
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid worker ID',
+        message: 'Invalid user ID',
       })
     }
 
-    const worker = await User.findOne({
+    // Only allow workers and customers to be verified
+    const user = await User.findOne({
       _id: id,
-      role: 'worker',
+      role: { $in: ['worker', 'customer'] },
     })
 
-    if (!worker) {
+    if (!user) {
       return res.status(404).json({
         success: false,
-        message: 'Worker not found',
+        message: 'User not found',
       })
     }
 
-    if (!worker.verification) {
-      worker.verification = {}
+    if (!user.verification) {
+      user.verification = {}
     }
 
-    worker.verification.isVerified = Boolean(isVerified)
+    user.verification.isVerified = Boolean(isVerified)
 
-    if (isVerified) {
-      worker.verification.verifiedAt = new Date()
-    } else {
-      worker.verification.verifiedAt = null
-    }
+    user.verification.verifiedAt = isVerified
+      ? new Date()
+      : null
 
-    await worker.save()
+    await user.save()
 
     return res.status(200).json({
       success: true,
       message: isVerified
-        ? 'Worker verified successfully'
-        : 'Worker verification rejected',
+        ? `${user.role} verified successfully`
+        : `${user.role} verification rejected`,
+      data: user.verification,
     })
   } catch (error) {
+    console.error('ADMIN VERIFY USER ERROR:', error)
+
     return res.status(500).json({
       success: false,
       message: error.message,
@@ -267,40 +269,42 @@ export const deleteVerificationRequest = async (req, res) => {
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid worker ID',
+        message: 'Invalid user ID',
       })
     }
 
-    const worker = await User.findOne({
+    const user = await User.findOne({
       _id: id,
-      role: 'worker',
+      role: { $in: ['worker', 'customer'] },
     })
 
-    if (!worker) {
+    if (!user) {
       return res.status(404).json({
         success: false,
-        message: 'Worker not found',
+        message: 'User not found',
       })
     }
 
-    if (!worker.verification) {
+    if (!user.verification) {
       return res.status(404).json({
         success: false,
         message: 'No verification request found',
       })
     }
 
-    // Remove only the verification data.
-    // The worker account remains intact.
-    worker.verification = undefined
+    // Remove only verification data.
+    // The account remains intact.
+    user.verification = undefined
 
-    await worker.save()
+    await user.save()
 
     return res.status(200).json({
       success: true,
       message: 'Verification request rejected successfully',
     })
   } catch (error) {
+    console.error('DELETE VERIFICATION ERROR:', error)
+
     return res.status(500).json({
       success: false,
       message: error.message,
