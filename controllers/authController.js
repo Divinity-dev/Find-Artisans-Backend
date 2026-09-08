@@ -5,7 +5,6 @@ import jwt from 'jsonwebtoken'
 import crypto from 'crypto'
 import sendEmail from '../utils/sendEmail.js'
 import User from '../models/users.js'
-import welcomeEmail from '../utils/emailTemplates/welcomeEmail.js'
 import verificationEmail from '../utils/emailTemplates/verificationEmail.js'
 
 // ======================================
@@ -94,22 +93,6 @@ export const registerUser = async (req, res) => {
     const verificationUrl =
   `${process.env.BACKEND_URL}/api/auth/verify-email/${verificationToken}`
 
-    // ======================================
-    // SEND WELCOME EMAIL
-    // ======================================
-    try {
-      await sendEmail(
-        user.email,
-        'Welcome to FindArtisans 🎉',
-        welcomeEmail(user.fullName)
-      )
-    } catch (emailError) {
-      // Email failure should NOT prevent account creation
-      console.error(
-        'Welcome email failed:',
-        emailError.message
-      )
-    }
 
     // ======================================
     // SEND VERIFICATION EMAIL
@@ -117,7 +100,7 @@ export const registerUser = async (req, res) => {
     try {
       await sendEmail(
         user.email,
-        'Verify your FindArtisans email',
+        'Welcome to FindArtisans — Verify your email',
         verificationEmail(
           user.fullName,
           verificationUrl
